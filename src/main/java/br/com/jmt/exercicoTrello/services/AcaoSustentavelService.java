@@ -3,6 +3,8 @@ package br.com.jmt.exercicoTrello.services;
 
 import br.com.jmt.exercicoTrello.entities.AcaoSustentavel;
 import br.com.jmt.exercicoTrello.enums.CategoriaAcao;
+import br.com.jmt.exercicoTrello.exceptions.ConflitoDeDadosException;
+import br.com.jmt.exercicoTrello.exceptions.RecursoNaoEncontradoException;
 import br.com.jmt.exercicoTrello.repositories.AcaoSustentavelRepository;
 
 import jakarta.transaction.Transactional;
@@ -30,7 +32,7 @@ public class AcaoSustentavelService {
                 acaoSustentavel.getDataRealizacao(),
                 acaoSustentavel.getResponsavel());
         if (exists)
-            throw new RuntimeException("Ação já existe no banco de dados");
+            throw new ConflitoDeDadosException("Ação já existe no banco de dados");
         return acaoRepository.save(acaoSustentavel);
     }
     @Transactional
@@ -45,7 +47,7 @@ public class AcaoSustentavelService {
             acaoRepository.deleteById(id);
             return "Filme com Id " + id + " deletado com sucesso";
         }else {
-            throw new RuntimeException("Ação com ID " + id + " não encontrado");
+            throw new RecursoNaoEncontradoException("Ação com ID " + id + " não encontrado");
         }
     }
     public long countAcoes(){
@@ -53,16 +55,17 @@ public class AcaoSustentavelService {
     }
 
     @Transactional
-    public String updateAcao(Long id, AcaoSustentavel updateAcao){
-        return acaoRepository.findById(id).map(acao -> {
-            acao.setCategoria(updateAcao.getCategoria());
-            acao.setDataRealizacao(updateAcao.getDataRealizacao());
-            acao.setDescricao(updateAcao.getDescricao());
-            acao.setResponsavel(updateAcao.getResponsavel());
-            acao.setTitulo(updateAcao.getTitulo());
-          acaoRepository.save(acao);
-            return "Ação com Id " + id + " atualizada com sucesso";
-        }).orElseThrow(() -> new RuntimeException("Ação com ID " + id + " não encontrado"));
+    public AcaoSustentavel updateAcao(Long id, AcaoSustentavel updateAcao) {
+        AcaoSustentavel acao = acaoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Ação com ID " + id + " não encontrada."));
+
+        acao.setCategoria(updateAcao.getCategoria());
+        acao.setDataRealizacao(updateAcao.getDataRealizacao());
+        acao.setDescricao(updateAcao.getDescricao());
+        acao.setResponsavel(updateAcao.getResponsavel());
+        acao.setTitulo(updateAcao.getTitulo());
+
+        return acaoRepository.save(acao);
     }
 
     public List<AcaoSustentavel> getAcoes(){
@@ -73,7 +76,7 @@ public class AcaoSustentavelService {
     public List<AcaoSustentavel> getAcaoByCategoria(CategoriaAcao categoriaAcao) {
         acoes = acaoRepository.findByCategoria(categoriaAcao);
         if (acoes.isEmpty()) {
-            throw new RuntimeException("Nenhuma ação encontrada para a categoria: " + categoriaAcao);
+            throw new RecursoNaoEncontradoException("Nenhuma ação encontrada para a categoria: " + categoriaAcao);
         }
         return acoes;
     }
